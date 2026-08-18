@@ -72,8 +72,7 @@ flowchart TD
 ### 1. Run Backend (FastAPI + uv)
 ```bash
 cd backend
-uv venv
-uv pip install -r requirements.txt
+uv sync
 uv run uvicorn app.main:app --port 8001 --reload
 ```
 *The backend boots on `http://localhost:8001` and automatically pre-seeds 5 realistic suppliers and initial attestation cycles.*
