@@ -6,10 +6,35 @@ import { BackendOfflineAlert } from "../app/components/BackendOfflineAlert";
 import { HeroBanner } from "../app/components/HeroBanner";
 import { KpiStatsSection } from "../app/components/KpiStatsSection";
 import { SupplierDirectoryTable } from "../app/components/SupplierDirectoryTable";
+import { Navbar } from "../app/components/Navbar";
 import { ShieldCheck } from "lucide-react";
 import { ProgrammeReport, Supplier } from "../app/types";
 
 describe("Frontend Component SSR Rendering Tests", () => {
+  const mockSuppliers: Supplier[] = [
+    {
+      id: "sup-001-acme",
+      name: "Acme Precision Components GmbH",
+      code: "SUP-ACME-01",
+      tier: "TIER_1_STRATEGIC",
+      region: "EU",
+      country: "Germany",
+      primary_contact_email: "compliance@acme-precision.de",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ];
+
+  it("Navbar renders brand, task title, and actions", () => {
+    const html = renderToString(
+      <Navbar onRefresh={() => {}} onOpenReport={() => {}} loading={false} />
+    );
+
+    expect(html).toContain("SuperDocs");
+    expect(html).toContain("ESG Attestation Engine");
+    expect(html).toContain("Executive Report");
+  });
+
   it("StatCard renders title, value, subtitle, and trend badge", () => {
     const html = renderToString(
       <StatCard
@@ -41,7 +66,7 @@ describe("Frontend Component SSR Rendering Tests", () => {
     expect(html).toContain("Retry");
   });
 
-  it("HeroBanner renders title and action button", () => {
+  it("HeroBanner renders title and report trigger button", () => {
     const html = renderToString(<HeroBanner onOpenReport={() => {}} />);
 
     expect(html).toContain("Supplier Code-of-Conduct &amp; ESG Compliance");
@@ -84,20 +109,6 @@ describe("Frontend Component SSR Rendering Tests", () => {
   });
 
   it("SupplierDirectoryTable renders suppliers and status badges", () => {
-    const mockSuppliers: Supplier[] = [
-      {
-        id: "sup-001-acme",
-        name: "Acme Precision Components GmbH",
-        code: "SUP-ACME-01",
-        tier: "TIER_1_STRATEGIC",
-        region: "EU",
-        country: "Germany",
-        primary_contact_email: "compliance@acme-precision.de",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ];
-
     const html = renderToString(
       <SupplierDirectoryTable
         suppliers={mockSuppliers}

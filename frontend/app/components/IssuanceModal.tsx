@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Send, FileCheck, Layers, Globe, Sparkles } from "lucide-react";
 import { Supplier } from "../types";
 import { api } from "../services/api";
+import { config } from "../config";
 
 interface IssuanceModalProps {
   supplier: Supplier | null;
@@ -159,7 +160,11 @@ export const IssuanceModal: React.FC<IssuanceModalProps> = ({
                 <span>SuperDocs Doc ID: <code className="text-emerald-400">{issuedDoc.superdocs_document_id}</code></span>
                 {issuedDoc.export_url && (
                   <a
-                    href={issuedDoc.export_url.startsWith("http") ? issuedDoc.export_url : `http://localhost:8001${issuedDoc.export_url}`}
+                    href={
+                      issuedDoc.export_url.startsWith("http")
+                        ? issuedDoc.export_url
+                        : `${config.api.baseUrl.replace(/\/api\/v1\/?$/, "")}${issuedDoc.export_url}`
+                    }
                     target="_blank"
                     rel="noreferrer"
                     className="text-emerald-400 underline hover:text-emerald-300 font-medium flex items-center gap-1"

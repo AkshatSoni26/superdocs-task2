@@ -6,19 +6,18 @@ import {
   ProgrammeReport,
   ReviewDecision,
 } from "../types";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api/v1";
+import { config, buildApiUrl } from "../config";
 
 export const api = {
   // Suppliers
   async getSuppliers(): Promise<Supplier[]> {
-    const res = await fetch(`${API_BASE}/suppliers`);
+    const res = await fetch(buildApiUrl(config.api.endpoints.suppliers));
     if (!res.ok) throw new Error("Failed to fetch suppliers");
     return res.json();
   },
 
   async createSupplier(data: Omit<Supplier, "id" | "created_at" | "updated_at">): Promise<Supplier> {
-    const res = await fetch(`${API_BASE}/suppliers`, {
+    const res = await fetch(buildApiUrl(config.api.endpoints.suppliers), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -28,14 +27,14 @@ export const api = {
   },
 
   // Issuance & Cycles
-  async getCycles(cycleYear: number = 2026): Promise<AttestationCycle[]> {
-    const res = await fetch(`${API_BASE}/issuance/cycles?cycle_year=${cycleYear}`);
+  async getCycles(cycleYear: number = config.app.defaultCycleYear): Promise<AttestationCycle[]> {
+    const res = await fetch(`${buildApiUrl(config.api.endpoints.cycles)}?cycle_year=${cycleYear}`);
     if (!res.ok) throw new Error("Failed to fetch attestation cycles");
     return res.json();
   },
 
-  async issueQuestionnaire(supplierId: string, cycleYear: number = 2026): Promise<any> {
-    const res = await fetch(`${API_BASE}/issuance/issue`, {
+  async issueQuestionnaire(supplierId: string, cycleYear: number = config.app.defaultCycleYear): Promise<any> {
+    const res = await fetch(buildApiUrl(config.api.endpoints.issue), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ supplier_id: supplierId, cycle_year: cycleYear }),
@@ -51,7 +50,7 @@ export const api = {
     formData.append("file", file);
     formData.append("auto_normalize", String(autoNormalize));
 
-    const res = await fetch(`${API_BASE}/ingestion/upload`, {
+    const res = await fetch(buildApiUrl(config.api.endpoints.ingestUpload), {
       method: "POST",
       body: formData,
     });
@@ -62,7 +61,7 @@ export const api = {
   // Assessments & Review Gate
   async getAssessmentByAttestation(attestationId: string): Promise<Assessment | null> {
     try {
-      const res = await fetch(`${API_BASE}/assessments/by-attestation/${attestationId}`);
+      const res = await fetch(buildApiUrl(config.api.endpoints.assessmentsByAttestation(attestationId)));
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch assessment");
       return res.json();
@@ -77,7 +76,7 @@ export const api = {
     approvedBy: string,
     findingDecisions: Array<{ finding_id: string; review_decision: ReviewDecision; review_notes?: string }>
   ): Promise<Assessment> {
-    const res = await fetch(`${API_BASE}/review/${assessmentId}/submit`, {
+    const res = await fetch(buildApiUrl(config.api.endpoints.reviewSubmit(assessmentId)), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -91,8 +90,11 @@ export const api = {
   },
 
   // Follow-up Letters
-  async generateFollowUpLetter(attestationId: string, deadlineDays: number = 30): Promise<FollowUpLetter> {
-    const res = await fetch(`${API_BASE}/follow-ups/generate`, {
+  async generateFollowUpLetter(
+    attestationId: string,
+    deadlineDays: number = config.app.defaultRemediationDays
+  ): Promise<FollowUpLetter> {
+    const res = await fetch(buildApiUrl(config.api.endpoints.followUpGenerate), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -108,13 +110,13 @@ export const api = {
   },
 
   async getLettersByAttestation(attestationId: string): Promise<FollowUpLetter[]> {
-    const res = await fetch(`${API_BASE}/follow-ups/by-attestation/${attestationId}`);
+    const res = await fetch(buildApiUrl(config.api.endpoints.followUpsByAttestation(attestationId)));
     if (!res.ok) throw new Error("Failed to fetch follow-up letters");
     return res.json();
   },
 
   async updateLetterStatus(letterId: string, status: "DRAFT" | "APPROVED" | "SENT"): Promise<FollowUpLetter> {
-    const res = await fetch(`${API_BASE}/follow-ups/${letterId}/status`, {
+    const res = await fetch(buildApiUrl(config.api.endpoints.followUpStatus(letterId)), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -124,8 +126,8 @@ export const api = {
   },
 
   // Reports
-  async getProgrammeReport(cycleYear: number = 2026): Promise<ProgrammeReport> {
-    const res = await fetch(`${API_BASE}/reports/programme-summary?cycle_year=${cycleYear}`);
+  async getProgrammeReport(cycleYear: number = config.app.defaultCycleYear): Promise<ProgrammeReport> {
+    const res = await fetch(buildApiUrl(config.api.endpoints.programmeReport(cycleYear)));
     if (!res.ok) throw new Error("Failed to fetch programme report");
     return res.json();
   },

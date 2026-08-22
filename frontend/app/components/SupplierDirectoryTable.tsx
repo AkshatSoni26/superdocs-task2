@@ -49,24 +49,24 @@ export function SupplierDirectoryTable({
   });
 
   return (
-    <div className="glass-panel rounded-3xl overflow-hidden border border-white/10 space-y-4 p-6">
+    <div className="glass-panel rounded-3xl overflow-hidden border border-white/10 space-y-4 p-6 shadow-2xl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 className="font-bold text-white text-lg">Supplier Attestation Directory</h3>
-          <p className="text-xs text-slate-400">
+          <h3 className="font-bold text-white text-lg tracking-tight">Supplier Attestation Directory</h3>
+          <p className="text-xs text-slate-300 font-normal">
             Manage lifecycle status from issuance to review gate approval and remediation letters.
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 text-xs">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-900/90 rounded-xl border border-white/10 text-xs">
           {TIER_OPTIONS.map((t) => (
             <button
               key={t.key}
               onClick={() => onSelectTier(t.key)}
-              className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all font-medium cursor-pointer ${
                 selectedTier === t.key
-                  ? "bg-emerald-500 text-slate-950 font-semibold"
+                  ? "bg-rose-500 text-white font-semibold shadow-md shadow-rose-500/20"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -80,13 +80,13 @@ export function SupplierDirectoryTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-white/10 text-slate-400 uppercase tracking-wider font-semibold">
-              <th className="py-3 px-4">Supplier</th>
-              <th className="py-3 px-4">Tier & Region</th>
-              <th className="py-3 px-4">Cycle Status</th>
-              <th className="py-3 px-4">ESG Score</th>
-              <th className="py-3 px-4">Findings</th>
-              <th className="py-3 px-4 text-right">Workflow Actions</th>
+            <tr className="border-b border-white/10 text-slate-300 uppercase tracking-wider font-semibold bg-white/[0.02]">
+              <th className="py-3.5 px-4">Supplier</th>
+              <th className="py-3.5 px-4">Tier & Region</th>
+              <th className="py-3.5 px-4">Cycle Status</th>
+              <th className="py-3.5 px-4">ESG Score</th>
+              <th className="py-3.5 px-4">Findings</th>
+              <th className="py-3.5 px-4 text-right">Workflow Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -96,10 +96,10 @@ export function SupplierDirectoryTable({
               const findingsCount = assessment?.findings?.length || 0;
 
               return (
-                <tr key={supplier.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={supplier.id} className="hover:bg-white/[0.04] transition-colors">
                   {/* Name & Code */}
                   <td className="py-4 px-4">
-                    <div className="font-semibold text-white text-sm">{supplier.name}</div>
+                    <div className="font-bold text-white text-sm tracking-tight">{supplier.name}</div>
                     <div className="text-slate-400 font-mono text-[11px] mt-0.5">
                       {supplier.code} · {supplier.primary_contact_email}
                     </div>
@@ -108,10 +108,10 @@ export function SupplierDirectoryTable({
                   {/* Tier & Region */}
                   <td className="py-4 px-4">
                     <div className="flex flex-col gap-1 items-start">
-                      <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-white/5 border border-white/10 text-slate-300">
+                      <span className="px-2 py-0.5 rounded font-mono text-[10px] font-semibold bg-white/10 border border-white/15 text-slate-200">
                         {supplier.tier.replace("TIER_", "T").replace("_", " ")}
                       </span>
-                      <span className="text-slate-400 text-[11px]">
+                      <span className="text-slate-300 text-[11px]">
                         {supplier.region} ({supplier.country})
                       </span>
                     </div>
@@ -120,15 +120,15 @@ export function SupplierDirectoryTable({
                   {/* Status */}
                   <td className="py-4 px-4">
                     <span
-                      className={`px-2.5 py-1 rounded-full font-mono text-[10px] uppercase font-semibold border ${
+                      className={`px-3 py-1 rounded-full font-mono text-[10px] uppercase font-bold border ${
                         cycle?.status === "APPROVED"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                           : cycle?.status === "FOLLOW_UP_REQUIRED"
-                          ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                          ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
                           : cycle?.status === "UNDER_REVIEW" || cycle?.status === "NORMALIZED"
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
                           : cycle?.status === "ISSUED"
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          ? "bg-sky-500/15 text-sky-300 border-sky-500/30"
                           : "bg-slate-800 text-slate-400 border-white/10"
                       }`}
                     >
@@ -140,13 +140,13 @@ export function SupplierDirectoryTable({
                   <td className="py-4 px-4">
                     {assessment ? (
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className="font-bold text-white text-sm">
                             {assessment.overall_risk_score}
                           </span>
-                          <span className="text-[10px] text-slate-400">/100 risk</span>
+                          <span className="text-[10px] text-slate-400 font-medium">/100 risk</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
+                        <div className="text-[10px] text-slate-300 font-mono">
                           E:{assessment.environmental_score.toFixed(0)} S:
                           {assessment.social_score.toFixed(0)} G:
                           {assessment.governance_score.toFixed(0)}
@@ -161,12 +161,12 @@ export function SupplierDirectoryTable({
                   <td className="py-4 px-4">
                     {assessment ? (
                       findingsCount === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> 0 Gaps (Clean)
+                        <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
+                          <CheckCircle2 className="w-4 h-4" /> 0 Gaps (Clean)
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-rose-400 font-medium font-mono">
-                          <AlertTriangle className="w-3.5 h-3.5" /> {findingsCount} finding(s)
+                        <span className="inline-flex items-center gap-1.5 text-rose-400 font-bold font-mono">
+                          <AlertTriangle className="w-4 h-4" /> {findingsCount} finding(s)
                         </span>
                       )
                     ) : (
@@ -181,9 +181,9 @@ export function SupplierDirectoryTable({
                       {(!cycle || cycle.status === "DRAFT") && (
                         <button
                           onClick={() => onIssuePackage(supplier)}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-all font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                         >
-                          <Send className="w-3 h-3" />
+                          <Send className="w-3.5 h-3.5" />
                           Issue Package
                         </button>
                       )}
@@ -192,9 +192,9 @@ export function SupplierDirectoryTable({
                       {cycle && (
                         <button
                           onClick={() => onUploadResponse(supplier, cycle)}
-                          className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 transition-all font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                         >
-                          <Upload className="w-3 h-3" />
+                          <Upload className="w-3.5 h-3.5" />
                           {cycle.status === "ISSUED" ? "Upload Response" : "Re-Upload"}
                         </button>
                       )}
@@ -203,9 +203,9 @@ export function SupplierDirectoryTable({
                       {assessment && (
                         <button
                           onClick={() => onReviewGate(supplier, assessment)}
-                          className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-all font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                         >
-                          <Eye className="w-3 h-3" />
+                          <Eye className="w-3.5 h-3.5" />
                           Review Gate
                         </button>
                       )}
@@ -214,9 +214,9 @@ export function SupplierDirectoryTable({
                       {cycle && assessment && findingsCount > 0 && (
                         <button
                           onClick={() => onDeficiencyLetter(supplier, cycle)}
-                          className="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 transition-all font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                         >
-                          <Mail className="w-3 h-3" />
+                          <Mail className="w-3.5 h-3.5" />
                           Deficiency Letter
                         </button>
                       )}

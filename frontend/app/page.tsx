@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { BackendOfflineAlert } from "./components/BackendOfflineAlert";
 import { HeroBanner } from "./components/HeroBanner";
@@ -16,24 +16,29 @@ import { IngestionModal } from "./components/IngestionModal";
 import { ReviewGateModal } from "./components/ReviewGateModal";
 import { FollowUpLetterModal } from "./components/FollowUpLetterModal";
 import { ProgrammeReportModal } from "./components/ProgrammeReportModal";
-import {
-  Supplier,
-  AttestationCycle,
-  Assessment,
-  ProgrammeReport,
-} from "./types";
-import { api } from "./services/api";
+import { useAttestationCycle } from "./hooks/useAttestationCycle";
+import { useProgrammeReport } from "./hooks/useProgrammeReport";
+import { Supplier, AttestationCycle, Assessment } from "./types";
 
 export default function Home() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [cycles, setCycles] = useState<AttestationCycle[]>([]);
-  const [report, setReport] = useState<ProgrammeReport | null>(null);
-  const [assessmentsMap, setAssessmentsMap] = useState<Record<string, Assessment>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Custom Hooks for Data Management
+  const {
+    suppliers,
+    cycles,
+    assessmentsMap,
+    filteredSuppliers,
+    loading: cycleLoading,
+    error: cycleError,
+    selectedTier,
+    setSelectedTier,
+    refresh: refreshCycleData,
+  } = useAttestationCycle();
 
-  // Filter
-  const [selectedTier, setSelectedTier] = useState<string>("ALL");
+  const {
+    report,
+    loading: reportLoading,
+    refresh: refreshReport,
+  } = useProgrammeReport();
 
   // Modal States
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -46,49 +51,23 @@ export default function Home() {
   const [isLetterOpen, setIsLetterOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
-  useEffect(() => {
-    loadAllData();
-  }, []);
-
-  const loadAllData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [supData, cycleData, reportData] = await Promise.all([
-        api.getSuppliers(),
-        api.getCycles(2026),
-        api.getProgrammeReport(2026),
-      ]);
-
-      setSuppliers(supData);
-      setCycles(cycleData);
-      setReport(reportData);
-
-      // Load assessments for cycles
-      const assMap: Record<string, Assessment> = {};
-      for (const c of cycleData) {
-        const ass = await api.getAssessmentByAttestation(c.id);
-        if (ass) {
-          assMap[c.id] = ass;
-        }
-      }
-      setAssessmentsMap(assMap);
-    } catch (err: any) {
-      console.error("Failed to load dashboard data", err);
-      setError("FastAPI Backend is not connected at http://localhost:8001. Please run 'make backend' in your task2 terminal.");
-    } finally {
-      setLoading(false);
-    }
+  const handleRefreshAll = () => {
+    refreshCycleData();
+    refreshReport();
   };
 
   return (
     <div className="min-h-screen pb-16">
       {/* Top Navbar */}
-      <Navbar onRefresh={loadAllData} loading={loading} />
+      <Navbar
+        onRefresh={handleRefreshAll}
+        onOpenReport={() => setIsReportOpen(true)}
+        loading={cycleLoading || reportLoading}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* Backend Offline Alert */}
-        {error && <BackendOfflineAlert error={error} onRetry={loadAllData} />}
+        {cycleError && <BackendOfflineAlert error={cycleError} onRetry={handleRefreshAll} />}
 
         {/* Page Hero Banner */}
         <HeroBanner onOpenReport={() => setIsReportOpen(true)} />
@@ -139,7 +118,7 @@ export default function Home() {
         supplier={selectedSupplier}
         isOpen={isIssuanceOpen}
         onClose={() => setIsIssuanceOpen(false)}
-        onSuccess={loadAllData}
+        onSuccess={handleRefreshAll}
       />
 
       <IngestionModal
@@ -147,7 +126,7 @@ export default function Home() {
         attestation={selectedCycle}
         isOpen={isIngestionOpen}
         onClose={() => setIsIngestionOpen(false)}
-        onSuccess={loadAllData}
+        onSuccess={handleRefreshAll}
       />
 
       <ReviewGateModal
@@ -155,7 +134,7 @@ export default function Home() {
         assessment={selectedAssessment}
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
-        onSuccess={loadAllData}
+        onSuccess={handleRefreshAll}
       />
 
       <FollowUpLetterModal
