@@ -1,9 +1,11 @@
 import json
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.core.logger import get_logger
 from app.db.models import AttestationCycleModel, AssessmentModel, FindingModel, SupplierModel
 from app.schemas.enums import (
     AttestationStatus,
@@ -21,6 +23,8 @@ from app.schemas.assessment import (
     FindingSchema,
     NormalizedAssessmentSchema,
 )
+
+logger = get_logger("normalization_service")
 
 
 class NormalizationService:
@@ -271,6 +275,7 @@ class NormalizationService:
 
     async def normalize_attestation(self, attestation_id: str, raw_response_text: str) -> AssessmentModel:
         """Normalizes an attestation and commits assessment and finding records to DB."""
+        t_start = time.monotonic()
         if not self.db:
             raise ValueError("Database session required for persistent normalization.")
 
@@ -357,4 +362,13 @@ class NormalizationService:
 
         await self.db.commit()
         await self.db.refresh(assessment)
+
+        elapsed = time.monotonic() - t_start
+        logger.info(
+            f"Normalization complete | attestation={attestation_id} "
+            f"risk_tier={normalized_data.risk_tier.value} "
+            f"findings={len(normalized_data.findings)} "
+            f"risk_score={normalized_data.overall_risk_score} "
+            f"elapsed={elapsed:.3f}s"
+        )
         return assessment
