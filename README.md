@@ -1,4 +1,4 @@
-# SuperDocs Build: Supplier Code-of-Conduct & ESG Questionnaire Cycle
+# SuperDocs Build: Supplier Code-of-Conduct & ESG Attestation Engine
 
 > *Built for the SuperDocs Full-Stack AI Engineer Task (Assigned Build S2: Responsible-Sourcing & Supplier Attestation)*
 
@@ -6,42 +6,62 @@ An automated, audit-ready compliance intelligence platform built on the **SuperD
 
 ---
 
-## 📸 Key Capabilities & Architecture
+## 📸 System Architecture & Pipeline Flow
 
 ```mermaid
 flowchart TD
-    subgraph UI ["Next.js App Router (React 19 + Tailwind CSS + Recharts)"]
-        Dashboard["📊 Executive Dashboard & Risk Profile Charts"]
-        Issuer["📝 Tier & Region Questionnaire Wizard"]
-        IngestHub["📥 Multi-Format Response Hub (.pdf, .docx, .txt)"]
-        ReviewGate["🔍 Human Review Gate & SuperDocs Diff Viewer"]
-        LetterGen["✉️ Deficiency Letter Generator (Verbatim Quotes)"]
-        ReportGen["📑 Executive Programme Report & Export"]
+    subgraph Frontend ["Next.js App Router (React 19 + Tailwind CSS + Recharts)"]
+        Nav["🧭 Top Navbar with 3-Tab Switcher"]
+        Tab1["🏢 Tab 1: Supplier Operations (Table, Tier Filter, Modals)"]
+        Tab2["📊 Tab 2: Executive Analytics (Donut, Tier Stacked Bars, Pillar Gauges)"]
+        Tab3["📑 Tab 3: Compliance & Audit Hub (Verbatim Quotes, Severity Gaps, PDF Export)"]
     end
 
     subgraph Backend ["FastAPI Backend (Python 3.12 + strict Pydantic + SQLAlchemy)"]
-        API["FastAPI Endpoints (/api/v1)"]
+        API["FastAPI REST Endpoints (/api/v1)"]
         
-        subgraph Services ["OOP Service Layer"]
-            SD_Client["SuperDocsClientService\n(Upload, Chat, Approve, Export, 2-Step JSON Parse)"]
-            Issuance["IssuanceService\n(Tier 1-3 & EU/US/APAC Addenda)"]
-            Ingestion["IngestionService\n(PDF/DOCX/Text Stream Parsing)"]
-            Norm["NormalizationService\n(ESG Scoring & Verbatim Quote Extraction)"]
-            FollowUp["FollowUpService\n(Remediation Letters with Evidence Quotes)"]
-            Aggregation["AggregationService\n(Risk Distribution & Mathematical Reconciliation)"]
+        subgraph Evaluators ["Decomposed Evaluator Sub-Services (SRP & SOLID)"]
+            EE["🌿 EnvironmentalEvaluator\n(Scope 1-3 GHG, ISO 14001, Renewables)"]
+            SE["👥 SocialEvaluator\n(ILO Max Hours, Overtime, Recruitment Fees)"]
+            GE["🏛️ GovernanceEvaluator\n(Anti-Bribery, Whistleblower, Sub-Tier BOM)"]
+            SC["⚖️ ESGScoringCalculator\n(Pillar Scores, Risk Tier, Honest Narrative)"]
+        end
+
+        subgraph CoreServices ["Orchestration & Document Services"]
+            Issuance["📝 IssuanceService (Jinja2 Tier/Region Templates)"]
+            Ingestion["📥 IngestionService (Stream-Safe PDF/DOCX/TXT Parsing)"]
+            Norm["🔄 NormalizationService (Quote Extractor & Evaluator Coordinator)"]
+            FollowUp["✉️ FollowUpService (Deficiency Letters with Verbatim Quotes)"]
+            Aggregation["📈 AggregationService (Cross-Tier Reconciliation)"]
+            DocExport["📑 DocumentExportService (ReportLab Multi-Page Vector PDF)"]
+            SD_Client["🤖 SuperDocsClientService (4-Step Contract & 2-Step JSON Parse)"]
         end
         
-        DB[("Database (Suppliers, Attestations, Findings, Letters)")]
+        DB[("SQLite/PostgreSQL DB\n(Suppliers, Attestations, Findings, Letters)")]
     end
 
-    subgraph SuperDocs ["SuperDocs Surface"]
-        SD_Engine["SuperDocs Platform (REST API / MCP Tools)"]
-    end
+    Frontend <--> API
+    API --> CoreServices
+    CoreServices --> Evaluators
+    CoreServices <--> DB
+    DocExport --> SD_Client
+```
 
-    UI <--> API
-    API --> Services
-    Services <--> DB
-    SD_Client <--> SD_Engine
+---
+
+## 🔄 Attestation Lifecycle State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> NOT_ISSUED: Seed Base Suppliers
+    NOT_ISSUED --> ISSUED: Stage 1 (Issue Questionnaire Package)
+    ISSUED --> SUBMITTED: Stage 2 (Supplier Uploads PDF/DOCX/TXT)
+    SUBMITTED --> NORMALIZED: Automated Data Extraction & Quote Citation
+    NORMALIZED --> UNDER_REVIEW: Stage 3 (Human Review Gate Triggered)
+    UNDER_REVIEW --> APPROVED: Human Officer Approves Clean Report (0 Gaps)
+    UNDER_REVIEW --> FOLLOW_UP_REQUIRED: Human Officer Confirms Identified Gaps
+    FOLLOW_UP_REQUIRED --> DEFICIENCY_NOTICE_SENT: Stage 4 (Letter Quoting Exact Evidence)
+    DEFICIENCY_NOTICE_SENT --> APPROVED: Supplier Resolves Remediation Audit
 ```
 
 ---
@@ -49,7 +69,7 @@ flowchart TD
 ## 🌟 What Strong Looks Like (Rubric Achievements)
 
 1. **Multi-Format Normalization into One Shape**:
-   - Ingests supplier returns across PDF, Word (`.docx`), plain text, and JSON.
+   - Ingests supplier returns across PDF, Word (`.docx`), plain text, and JSON without loading large files fully into RAM.
    - Normalizes all submissions into a strictly typed `NormalizedAssessmentSchema` with Environmental, Social, and Governance sub-scores (0–100) and risk tiering.
 2. **Surgical Evidence Quotes in Follow-Up Letters**:
    - Every flagged shortfall finding automatically extracts and quotes the **supplier's exact verbatim submitted statement** (e.g. *"We currently do not track Scope 2 indirect emissions from electricity consumption"*).
@@ -63,46 +83,47 @@ flowchart TD
 
 ---
 
-## 🚀 Quickstart (Running in Minutes)
+## 🚀 Quickstart (Running Locally with Make)
 
 ### Prerequisites
 - **Python 3.11+** with `uv`
-- **Node.js 20+** with `bun`
+- **Node.js 20+** with `bun` (or `npm`)
 
-### 1. Run Backend (FastAPI + uv)
+### 1. Install Dependencies
 ```bash
-cd backend
-uv sync
-uv run uvicorn app.main:app --port 8001 --reload
+make install
 ```
-*The backend boots on `http://localhost:8001` and automatically pre-seeds 5 realistic suppliers and initial attestation cycles.*
 
-### 2. Run Frontend (Next.js + bun)
+### 2. Reset Database to Clean Initial State (Optional)
 ```bash
-cd frontend
-bun install
-bun run dev
+make reset-db
+```
+
+### 3. Run Backend (FastAPI on port 8001)
+```bash
+make backend
+```
+
+### 4. Run Frontend (Next.js on port 3031)
+```bash
+make frontend
 ```
 *The frontend dashboard opens at `http://localhost:3031`.*
 
 ---
 
-## 🧪 Running Automated Tests (Zero Live Key Required)
+## 🧪 Automated Testing Suites (27 Backend + 14 Frontend Tests)
 
-All tests run locally in milliseconds with in-memory SQLite and mock SuperDocs fallback:
+All tests execute in milliseconds with in-memory SQLite and mock SuperDocs fallback:
 
 ```bash
-cd backend
-uv run pytest -v
-```
+# Run all tests (Backend + Frontend)
+make test-all
 
-### Test Coverage Highlights:
-- `test_superdocs_service.py`: Verifies 4-step contract, mock mode, and **2-step JSON string parsing**.
-- `test_issuance_service.py`: Verifies dynamic injection of Tier 1–3 questionnaires and EU/US/APAC regulatory annexes.
-- `test_normalization_and_quotes.py`: Verifies verbatim citation extraction from supplier text and honest 0-finding clean reports.
-- `test_follow_up_letters.py`: Verifies generation of evidence-quoted deficiency notices.
-- `test_aggregation_and_reconciliation.py`: Proves mathematical reconciliation between aggregate chart counts and individual supplier records.
-- `test_api_endpoints.py`: Integration testing of all FastAPI v1 endpoints.
+# Or run separately:
+make test-backend   # 27 pytest unit tests (~0.4s)
+make test-frontend  # 14 bun unit tests (~0.3s)
+```
 
 ---
 
@@ -110,7 +131,7 @@ uv run pytest -v
 
 | Tier | Mandatory Questionnaire Scope | Applicable Regulatory Annexes |
 | :--- | :--- | :--- |
-| **Tier 1 (Strategic)** | Scope 1–3 GHG accounting, ISO 14001, Sub-tier BOM Provenance | **EU CSRD/CSDDD/REACH** (Europe) |
+| **Tier 1 (Strategic)** | Scope 1–3 GHG accounting, ISO 14001, Sub-tier BOM Provenance | **EU CSRD / CSDDD / REACH** (Europe) |
 | **Tier 2 (Manufacturing)** | kWh Energy, Solder/Chemical Waste, 48+12h Workweek, Grievance Boxes | **APAC Labor & Migrant Rights** (Asia-Pacific) |
 | **Tier 3 (Commodities)** | Statutory EPA Permits, Clean Transport Fleet, Anti-Bribery Pledge | **US UFLPA & Conflict Minerals** (North America) |
 
@@ -119,4 +140,4 @@ uv run pytest -v
 ## ⚖️ Self-Reported Limitations & Trade-Offs
 
 - **OCR on Scanned/Image PDFs**: Text extraction uses PyPDF stream parsing; scanned image-only PDFs fall back to OCR text layers. In production, an upstream vision OCR pre-processor would handle low-resolution scans.
-- **Dynamic Chart Rendering in Exported PDFs**: Executive report PDFs currently render formatted markdown tables and summary datasets; native server-side SVG chart rasterization inside PDF documents is earmarked for v1.1.
+- **Dynamic Chart Rendering in Exported PDFs**: Executive report PDFs render formatted typography, tables, and summary datasets with ReportLab; native server-side SVG chart rasterization inside PDF documents is earmarked for v1.1.
