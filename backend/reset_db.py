@@ -6,7 +6,7 @@ import asyncio
 import os
 from sqlalchemy.ext.asyncio import create_async_engine
 from app.db.base import Base
-from app.db.session import async_session_factory
+from app.db.session import AsyncSessionLocal
 from app.db.models import SupplierModel
 from app.schemas.enums import SupplierTier, Region
 from app.core.config import settings
@@ -63,15 +63,19 @@ INITIAL_SUPPLIERS = [
 async def reset_database():
     db_file = "task2_esg.db"
     if os.path.exists(db_file):
-        os.remove(db_file)
-        print(f"✓ Removed existing database: {db_file}")
+        try:
+            os.remove(db_file)
+            print(f"✓ Removed existing database: {db_file}")
+        except Exception as e:
+            print(f"! Notice on removing db_file: {e}")
 
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         print("✓ Created database schema tables.")
 
-    async with async_session_factory() as session:
+    async with AsyncSessionLocal() as session:
         for s_data in INITIAL_SUPPLIERS:
             supplier = SupplierModel(**s_data)
             session.add(supplier)
