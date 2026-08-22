@@ -1,16 +1,33 @@
 "use client";
 
 import React from "react";
-import { FileText, RefreshCw, Sparkles, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import {
+  FileText,
+  RefreshCw,
+  FileSpreadsheet,
+  Building2,
+  BarChart3,
+  FileCheck2,
+} from "lucide-react";
 import { config } from "../config";
+
+export type DashboardTab = "operations" | "analytics" | "audit";
 
 interface NavbarProps {
   onRefresh: () => void;
   onOpenReport: () => void;
   loading: boolean;
+  activeTab: DashboardTab;
+  setActiveTab: (tab: DashboardTab) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onRefresh, onOpenReport, loading }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onRefresh,
+  onOpenReport,
+  loading,
+  activeTab,
+  setActiveTab,
+}) => {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 glass-panel backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -30,10 +47,49 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, onOpenReport, loading
                 Cycle · {config.app.defaultCycleYear}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 hidden sm:block">
               {config.app.tagline}
             </p>
           </div>
+        </div>
+
+        {/* Center: 3-Tab Navigation Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-900/90 rounded-2xl border border-white/10 text-xs">
+          <button
+            onClick={() => setActiveTab("operations")}
+            className={`px-3.5 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "operations"
+                ? "bg-rose-500 text-white font-semibold shadow-md shadow-rose-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Supplier Operations</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`px-3.5 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "analytics"
+                ? "bg-rose-500 text-white font-semibold shadow-md shadow-rose-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>Executive Analytics</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("audit")}
+            className={`px-3.5 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "audit"
+                ? "bg-rose-500 text-white font-semibold shadow-md shadow-rose-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <FileCheck2 className="w-3.5 h-3.5" />
+            <span>Compliance & Audit Hub</span>
+          </button>
         </div>
 
         {/* Right: Actions */}
@@ -43,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, onOpenReport, loading
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-semibold text-xs transition-all shadow-lg shadow-rose-500/25 flex items-center gap-2 cursor-pointer active:scale-98"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Executive Report</span>
+            <span className="hidden md:inline">Executive Report</span>
           </button>
 
           <button
@@ -53,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, onOpenReport, loading
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-rose-400" : ""}`} />
-            <span className="hidden sm:inline font-medium">Refresh</span>
+            <span className="hidden lg:inline font-medium">Refresh</span>
           </button>
         </div>
       </div>

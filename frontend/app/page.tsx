@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Navbar } from "./components/Navbar";
+import { Navbar, DashboardTab } from "./components/Navbar";
 import { BackendOfflineAlert } from "./components/BackendOfflineAlert";
 import { HeroBanner } from "./components/HeroBanner";
 import { KpiStatsSection } from "./components/KpiStatsSection";
@@ -11,6 +11,7 @@ import {
   PillarScoresCard,
 } from "./components/Charts";
 import { SupplierDirectoryTable } from "./components/SupplierDirectoryTable";
+import { ComplianceAuditHub } from "./components/ComplianceAuditHub";
 import { IssuanceModal } from "./components/IssuanceModal";
 import { IngestionModal } from "./components/IngestionModal";
 import { ReviewGateModal } from "./components/ReviewGateModal";
@@ -21,6 +22,8 @@ import { useProgrammeReport } from "./hooks/useProgrammeReport";
 import { Supplier, AttestationCycle, Assessment } from "./types";
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<DashboardTab>("operations");
+
   // Custom Hooks for Data Management
   const {
     suppliers,
@@ -58,59 +61,95 @@ export default function Home() {
 
   return (
     <div className="min-h-screen pb-16">
-      {/* Top Navbar */}
+      {/* Top Navbar with 3-Tab Switcher */}
       <Navbar
         onRefresh={handleRefreshAll}
         onOpenReport={() => setIsReportOpen(true)}
         loading={cycleLoading || reportLoading}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* Backend Offline Alert */}
         {cycleError && <BackendOfflineAlert error={cycleError} onRetry={handleRefreshAll} />}
 
-        {/* Page Hero Banner */}
-        <HeroBanner onOpenReport={() => setIsReportOpen(true)} />
+        {/* TAB 1: Supplier Operations */}
+        {activeTab === "operations" && (
+          <div className="space-y-8">
+            <HeroBanner onOpenReport={() => setIsReportOpen(true)} />
 
-        {/* KPI Stats Row */}
-        {report && <KpiStatsSection report={report} />}
+            {/* Quick KPI stats row for quick context */}
+            {report && <KpiStatsSection report={report} />}
 
-        {/* Charts Row */}
-        {report && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <RiskDistributionDonut data={report.risk_tier_breakdown} />
-            <TierRiskBarChart data={report.tier_distribution} />
-            <PillarScoresCard scores={report.pillar_averages} />
+            {/* Actionable Supplier Directory Table */}
+            <SupplierDirectoryTable
+              suppliers={suppliers}
+              cycles={cycles}
+              assessmentsMap={assessmentsMap}
+              selectedTier={selectedTier}
+              onSelectTier={setSelectedTier}
+              onIssuePackage={(supplier) => {
+                setSelectedSupplier(supplier);
+                setIsIssuanceOpen(true);
+              }}
+              onUploadResponse={(supplier, cycle) => {
+                setSelectedSupplier(supplier);
+                setSelectedCycle(cycle);
+                setIsIngestionOpen(true);
+              }}
+              onReviewGate={(supplier, assessment) => {
+                setSelectedSupplier(supplier);
+                setSelectedAssessment(assessment);
+                setIsReviewOpen(true);
+              }}
+              onDeficiencyLetter={(supplier, cycle) => {
+                setSelectedSupplier(supplier);
+                setSelectedCycle(cycle);
+                setIsLetterOpen(true);
+              }}
+            />
           </div>
         )}
 
-        {/* Supplier Attestation Management Directory */}
-        <SupplierDirectoryTable
-          suppliers={suppliers}
-          cycles={cycles}
-          assessmentsMap={assessmentsMap}
-          selectedTier={selectedTier}
-          onSelectTier={setSelectedTier}
-          onIssuePackage={(supplier) => {
-            setSelectedSupplier(supplier);
-            setIsIssuanceOpen(true);
-          }}
-          onUploadResponse={(supplier, cycle) => {
-            setSelectedSupplier(supplier);
-            setSelectedCycle(cycle);
-            setIsIngestionOpen(true);
-          }}
-          onReviewGate={(supplier, assessment) => {
-            setSelectedSupplier(supplier);
-            setSelectedAssessment(assessment);
-            setIsReviewOpen(true);
-          }}
-          onDeficiencyLetter={(supplier, cycle) => {
-            setSelectedSupplier(supplier);
-            setSelectedCycle(cycle);
-            setIsLetterOpen(true);
-          }}
-        />
+        {/* TAB 2: Executive Analytics */}
+        {activeTab === "analytics" && (
+          <div className="space-y-8">
+            <HeroBanner onOpenReport={() => setIsReportOpen(true)} />
+
+            {/* KPI Stats Row */}
+            {report && <KpiStatsSection report={report} />}
+
+            {/* Charts Row */}
+            {report && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <RiskDistributionDonut data={report.risk_tier_breakdown} />
+                <TierRiskBarChart data={report.tier_distribution} />
+                <PillarScoresCard scores={report.pillar_averages} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: Compliance & Audit Hub */}
+        {activeTab === "audit" && (
+          <ComplianceAuditHub
+            suppliers={suppliers}
+            cycles={cycles}
+            assessmentsMap={assessmentsMap}
+            onOpenReport={() => setIsReportOpen(true)}
+            onOpenReviewGate={(supplier, assessment) => {
+              setSelectedSupplier(supplier);
+              setSelectedAssessment(assessment);
+              setIsReviewOpen(true);
+            }}
+            onOpenDeficiencyLetter={(supplier, cycle) => {
+              setSelectedSupplier(supplier);
+              setSelectedCycle(cycle);
+              setIsLetterOpen(true);
+            }}
+          />
+        )}
       </main>
 
       {/* Modals */}
