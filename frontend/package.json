@@ -6,7 +6,8 @@
     "dev": "next dev -p 3031",
     "build": "next build",
     "start": "next start -p 3031",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "bun test"
   },
   "dependencies": {
     "clsx": "^2.1.1",
