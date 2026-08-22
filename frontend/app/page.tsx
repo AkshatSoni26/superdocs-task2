@@ -43,6 +43,7 @@ export default function Home() {
   const [report, setReport] = useState<ProgrammeReport | null>(null);
   const [assessmentsMap, setAssessmentsMap] = useState<Record<string, Assessment>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filter
   const [selectedTier, setSelectedTier] = useState<string>("ALL");
@@ -64,6 +65,7 @@ export default function Home() {
 
   const loadAllData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const [supData, cycleData, reportData] = await Promise.all([
         api.getSuppliers(),
@@ -84,8 +86,9 @@ export default function Home() {
         }
       }
       setAssessmentsMap(assMap);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load dashboard data", err);
+      setError("FastAPI Backend is not connected at http://localhost:8001. Please run 'make backend' in your task2 terminal.");
     } finally {
       setLoading(false);
     }
@@ -106,6 +109,25 @@ export default function Home() {
       <Navbar onRefresh={loadAllData} loading={loading} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+        {/* Backend Offline Alert */}
+        {error && (
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-white">Backend Connection Required</p>
+                <p className="text-xs text-rose-300/80">{error}</p>
+              </div>
+            </div>
+            <button
+              onClick={loadAllData}
+              className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-semibold text-white border border-rose-500/30 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Page Hero Banner */}
         <div className="glass-panel p-6 sm:p-8 rounded-3xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
