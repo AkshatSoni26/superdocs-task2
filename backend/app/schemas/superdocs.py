@@ -1,13 +1,16 @@
 import json
+import uuid
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 
 class SuperDocsUploadResponse(BaseModel):
-    document_id: str
-    filename: str
-    file_size_bytes: int
+    document_id: str = Field(default_factory=lambda: f"sd-doc-{uuid.uuid4().hex[:8]}")
+    filename: str = "document.md"
+    file_size_bytes: int = 0
     content_preview: str | None = None
-    created_at: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    html: str | None = None
 
 
 class SuperDocsChatRequest(BaseModel):
@@ -17,17 +20,17 @@ class SuperDocsChatRequest(BaseModel):
 
 
 class SuperDocsDiffCard(BaseModel):
-    diff_id: str
-    target_section: str
-    original_text: str
-    suggested_text: str
-    explanation: str
+    diff_id: str = Field(default_factory=lambda: f"diff-{uuid.uuid4().hex[:6]}")
+    target_section: str = "General"
+    original_text: str = ""
+    suggested_text: str = ""
+    explanation: str = ""
 
 
 class SuperDocsChatResponse(BaseModel):
-    job_id: str
+    job_id: str = Field(default_factory=lambda: f"sd-job-{uuid.uuid4().hex[:8]}")
     document_id: str
-    status: str  # in_progress, completed, awaiting_approval
+    status: str = "awaiting_approval"  # in_progress, completed, awaiting_approval
     # In SuperDocs, proposed change raw content can be a double JSON encoded string.
     raw_proposed_changes: str | None = None
     parsed_diffs: list[SuperDocsDiffCard] = Field(default_factory=list)
@@ -48,23 +51,23 @@ class SuperDocsChatResponse(BaseModel):
             if isinstance(data, list):
                 for item in data:
                     diffs.append(SuperDocsDiffCard(
-                        diff_id=item.get("diff_id", "diff-001"),
-                        target_section=item.get("target_section", "General"),
+                        diff_id=item.get("diff_id") or f"diff-{uuid.uuid4().hex[:6]}",
+                        target_section=item.get("target_section") or "General",
                         original_text=item.get("original_text", ""),
                         suggested_text=item.get("suggested_text", ""),
-                        explanation=item.get("explanation", item.get("rationale", ""))
+                        explanation=item.get("explanation") or item.get("rationale") or ""
                     ))
             elif isinstance(data, dict) and "diffs" in data:
                 for item in data["diffs"]:
                     diffs.append(SuperDocsDiffCard(
-                        diff_id=item.get("diff_id", "diff-001"),
-                        target_section=item.get("target_section", "General"),
+                        diff_id=item.get("diff_id") or f"diff-{uuid.uuid4().hex[:6]}",
+                        target_section=item.get("target_section") or "General",
                         original_text=item.get("original_text", ""),
                         suggested_text=item.get("suggested_text", ""),
                         explanation=item.get("explanation", "")
                     ))
             return diffs
-        except Exception:
+        except (json.JSONDecodeError, TypeError, KeyError, ValueError):
             return []
 
 

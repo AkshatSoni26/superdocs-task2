@@ -179,7 +179,7 @@ export const FollowUpLetterModal: React.FC<FollowUpLetterModalProps> = ({
 
                 {currentLetter.superdocs_export_url && (
                   <a
-                    href={currentLetter.superdocs_export_url}
+                    href={currentLetter.superdocs_export_url.startsWith("http") ? currentLetter.superdocs_export_url : `http://localhost:8001${currentLetter.superdocs_export_url}`}
                     target="_blank"
                     rel="noreferrer"
                     className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium flex items-center gap-2 transition-colors"

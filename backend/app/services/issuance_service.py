@@ -3,12 +3,12 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.core.config import settings
 from app.db.models import SupplierModel, AttestationCycleModel
 from app.schemas.enums import SupplierTier, Region, AttestationStatus
 from app.schemas.questionnaire import QuestionnaireIssuanceRequest, QuestionnaireIssuanceResponse
 from app.services.superdocs_service import SuperDocsClientService
-
-TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
+from app.helpers.template_renderer import TemplateRenderer
 
 
 class IssuanceService:
@@ -19,7 +19,7 @@ class IssuanceService:
         self.superdocs = superdocs_client or SuperDocsClientService()
 
     def _read_template(self, filename: str) -> str:
-        filepath = os.path.join(TEMPLATES_DIR, filename)
+        filepath = os.path.join(settings.TEMPLATES_DIR, filename)
         if os.path.exists(filepath):
             with open(filepath, "r", encoding="utf-8") as f:
                 return f.read()
@@ -54,17 +54,16 @@ class IssuanceService:
         annex_info = annex_map.get(supplier.region, ("Global Standard Addendum", "annex_eu_csrd.md"))
         regional_content = self._read_template(annex_info[1])
 
-        # Compile complete customized document
-        doc_header = f"""# ANNUAL ESG & ETHICAL CONDUCT ATTESTATION ({request.cycle_year})
-**Issued To:** {supplier.name} ({supplier.code})  
-**Tier Level:** {supplier.tier}  
-**Jurisdiction/Region:** {supplier.region} ({supplier.country})  
-**Primary Contact:** {supplier.primary_contact_email}  
-**Date of Issuance:** {datetime.now(timezone.utc).strftime('%Y-%m-%d')}  
-
----
-"""
-        full_document_markdown = f"{doc_header}\n\n{base_coc}\n\n---\n\n{tier_content}\n\n---\n\n{regional_content}"
+        # Compile complete customized document via Jinja2 template
+        full_document_markdown = TemplateRenderer.render(
+            "attestation_package.md.j2",
+            cycle_year=request.cycle_year,
+            supplier=supplier,
+            issuance_date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            base_coc=base_coc,
+            tier_content=tier_content,
+            regional_content=regional_content,
+        )
 
         # Upload document to SuperDocs
         doc_filename = f"ESG_Attestation_{supplier.code}_{request.cycle_year}.md"

@@ -65,5 +65,10 @@ async def upload_supplier_response(
             "message": "Supplier response ingested and normalized successfully."
         }
 
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except (OSError, IOError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"File storage error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Ingestion failed: {str(e)}")
+        # Catch unexpected schema errors while strictly surfacing the error class name
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Ingestion processing error ({type(e).__name__}): {str(e)}")

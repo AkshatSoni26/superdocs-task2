@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from app.schemas.enums import SupplierTier, Region
 
@@ -51,4 +52,4 @@ class ProgrammeReportResponse(BaseModel):
     regional_distribution: list[RegionalRiskData]
     top_recurring_shortfalls: list[TopFindingShortfall]
     executive_narrative_markdown: str
-    generated_at: str
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

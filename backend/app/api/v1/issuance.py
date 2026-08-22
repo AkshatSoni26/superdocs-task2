@@ -10,6 +10,9 @@ from app.schemas.questionnaire import (
 )
 from app.services.issuance_service import IssuanceService
 
+from sqlalchemy.exc import SQLAlchemyError
+import httpx
+
 router = APIRouter(prefix="/issuance", tags=["Questionnaire Issuance"])
 
 
@@ -25,8 +28,10 @@ async def issue_questionnaire(
         return response
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Issuance failed: {str(e)}")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"SuperDocs upstream communication error: {str(e)}")
+    except (SQLAlchemyError, OSError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database or storage error: {type(e).__name__}: {str(e)}")
 
 
 @router.get("/cycles", response_model=list[AttestationCycleResponse])

@@ -6,6 +6,7 @@ from app.db.models import AttestationCycleModel, AssessmentModel, FindingModel, 
 from app.schemas.enums import LetterStatus, ReviewDecision, FindingSeverity
 from app.schemas.followup import FollowUpLetterCreate, FollowUpLetterResponse
 from app.services.superdocs_service import SuperDocsClientService
+from app.helpers.template_renderer import TemplateRenderer
 
 
 class FollowUpService:
@@ -54,55 +55,15 @@ class FollowUpService:
         deadline_date = (datetime.now(timezone.utc) + timedelta(days=request.custom_remediation_deadline_days)).strftime("%B %d, %Y")
         today_date = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
-        # Draft letter with surgical evidence quotes
-        findings_markdown_blocks = []
-        for idx, f in enumerate(findings, 1):
-            severity_badge = f"**[{f.severity}]**" if f.severity in ["CRITICAL", "HIGH"] else f"[{f.severity}]"
-            block = f"""### Deficiency Item #{idx}: {f.standard_clause} {severity_badge}
-- **Shortfall Summary:** {f.shortfall_summary}
-- **Your Submitted Response (Verbatim Quote):**
-> *"{f.supplier_exact_quote}"*
-- **Required Corrective Action:** {f.recommended_action}
-"""
-            findings_markdown_blocks.append(block)
-
-        all_findings_text = "\n".join(findings_markdown_blocks)
-
-        letter_content = f"""# FORMAL ESG AUDIT REMEDIATION NOTICE
-
-**Date:** {today_date}  
-**To:** Responsible Sourcing & Compliance Lead  
-**Supplier:** {supplier.name} ({supplier.code})  
-**Tier / Region:** {supplier.tier} / {supplier.region}  
-**Contact Email:** {supplier.primary_contact_email}  
-**Mandatory Response Deadline:** {deadline_date}  
-
----
-
-Dear {supplier.name} Compliance Team,
-
-Thank you for submitting your documentation for the **{attestation.cycle_year} Annual Supplier ESG & Ethical Conduct Attestation Cycle**.
-
-Following our compliance audit, your submission was evaluated against our Global Supplier Code of Conduct and Regional Regulatory Addenda. While several operational standards were satisfied, our review has identified **{len(findings)} specific compliance shortfall(s)** that fall below our mandatory procurement thresholds.
-
-Please review the specific discrepancies and verbatim quotations from your submitted response below:
-
-{all_findings_text}
-
----
-
-### Mandatory Remediation Protocol:
-1. **Corrective Action Plan (CAP):** Submit a time-bound CAP signed by an authorized corporate officer within **{request.custom_remediation_deadline_days} days** (no later than **{deadline_date}**).
-2. **Audit Evidence:** Provide third-party audit documentation, certificates, or updated operational logs demonstrating resolution of the items cited above.
-3. **Escalation:** Failure to submit an approved CAP by the deadline may result in a freeze on new purchase orders or disqualification from our active supplier directory.
-
-If you have questions or require technical assistance, contact the Responsible Sourcing Office directly at `compliance@enterprise-esg.com`.
-
-Sincerely,
-
-**Responsible Sourcing & Supplier Compliance Directorate**  
-*Global Procurement Division*
-"""
+        letter_content = TemplateRenderer.render(
+            "deficiency_letter.md.j2",
+            today_date=today_date,
+            supplier=supplier,
+            attestation=attestation,
+            findings=findings,
+            custom_remediation_deadline_days=request.custom_remediation_deadline_days,
+            deadline_date=deadline_date,
+        )
 
         # Upload and Export via SuperDocs
         doc_filename = f"ESG_Remediation_Notice_{supplier.code}_{attestation.cycle_year}.md"

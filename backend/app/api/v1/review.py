@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.db.models import AssessmentModel, FindingModel, AttestationCycleModel
 from app.schemas.enums import AttestationStatus, ReviewDecision
@@ -81,7 +82,6 @@ async def submit_review(
     await db.refresh(assessment)
 
     # Return refreshed assessment with findings
-    from sqlalchemy.orm import selectinload
     refreshed_stmt = (
         select(AssessmentModel)
         .options(selectinload(AssessmentModel.findings))

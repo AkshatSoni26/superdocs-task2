@@ -135,7 +135,7 @@ export const ProgrammeReportModal: React.FC<ProgrammeReportModalProps> = ({
               Close
             </button>
             <a
-              href="/api/v1/superdocs/download/executive_programme_report_2026.pdf"
+              href="http://localhost:8001/api/v1/superdocs/download/executive_programme_report_2026.pdf"
               target="_blank"
               rel="noreferrer"
               className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-semibold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"

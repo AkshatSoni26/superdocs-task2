@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     
     # Storage Paths
     STORAGE_DIR: str = "storage"
-    TEMPLATES_DIR: str = "templates"
+    TEMPLATES_DIR: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
     UPLOADS_DIR: str = "storage/uploads"
     EXPORTS_DIR: str = "storage/exports"
     

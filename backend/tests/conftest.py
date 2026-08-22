@@ -15,6 +15,12 @@ test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 TestingSessionLocal = async_sessionmaker(bind=test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
+@pytest.fixture(autouse=True)
+def enforce_test_mock_mode(monkeypatch):
+    """Enforces mock mode during automated pytest runs so tests run offline without network dependency."""
+    monkeypatch.setattr(settings, "SUPERDOCS_MOCK_MODE", True)
+
+
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.new_event_loop()

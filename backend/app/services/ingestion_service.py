@@ -1,6 +1,8 @@
 import io
 import os
 import uuid
+import docx
+import pypdf
 from typing import BinaryIO
 from app.core.config import settings
 from app.services.superdocs_service import SuperDocsClientService
@@ -21,7 +23,6 @@ class IngestionService:
 
         if ext == ".pdf":
             try:
-                import pypdf
                 reader = pypdf.PdfReader(io.BytesIO(file_bytes))
                 text_parts = []
                 for page in reader.pages:
@@ -29,15 +30,14 @@ class IngestionService:
                     if extracted:
                         text_parts.append(extracted)
                 return "\n".join(text_parts) if text_parts else file_bytes.decode("utf-8", errors="ignore")
-            except Exception:
+            except (ValueError, TypeError, KeyError, OSError, io.UnsupportedOperation):
                 return file_bytes.decode("utf-8", errors="ignore")
 
         if ext in [".docx", ".doc"]:
             try:
-                import docx
                 doc = docx.Document(io.BytesIO(file_bytes))
                 return "\n".join([p.text for p in doc.paragraphs if p.text])
-            except Exception:
+            except (ValueError, TypeError, KeyError, OSError, io.UnsupportedOperation):
                 return file_bytes.decode("utf-8", errors="ignore")
 
         return file_bytes.decode("utf-8", errors="ignore")

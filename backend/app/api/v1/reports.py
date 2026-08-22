@@ -4,6 +4,8 @@ from app.db.session import get_db
 from app.schemas.report import ProgrammeReportResponse
 from app.services.aggregation_service import AggregationService
 
+from sqlalchemy.exc import SQLAlchemyError
+
 router = APIRouter(prefix="/reports", tags=["Executive Programme Reports"])
 
 
@@ -20,5 +22,7 @@ async def get_programme_summary(
     try:
         metrics = await service.get_programme_metrics(cycle_year=cycle_year)
         return metrics
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Aggregation failed: {str(e)}")
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database aggregation error: {str(e)}")
+    except (ValueError, KeyError) as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Data calculation error: {str(e)}")

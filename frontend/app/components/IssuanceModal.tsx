@@ -159,12 +159,12 @@ export const IssuanceModal: React.FC<IssuanceModalProps> = ({
                 <span>SuperDocs Doc ID: <code className="text-emerald-400">{issuedDoc.superdocs_document_id}</code></span>
                 {issuedDoc.export_url && (
                   <a
-                    href={issuedDoc.export_url}
+                    href={issuedDoc.export_url.startsWith("http") ? issuedDoc.export_url : `http://localhost:8001${issuedDoc.export_url}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-emerald-400 underline hover:text-emerald-300"
+                    className="text-emerald-400 underline hover:text-emerald-300 font-medium flex items-center gap-1"
                   >
-                    Download Export
+                    Download Export (PDF)
                   </a>
                 )}
               </div>

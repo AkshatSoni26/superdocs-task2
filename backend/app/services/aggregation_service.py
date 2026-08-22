@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.models import SupplierModel, AttestationCycleModel, AssessmentModel, FindingModel
-from app.schemas.enums import SupplierTier, Region, RiskTier
+from app.schemas.enums import SupplierTier, Region, RiskTier, AttestationStatus
 from app.schemas.report import (
     ProgrammeReportResponse,
     RiskDistributionItem,
@@ -13,6 +13,7 @@ from app.schemas.report import (
     TopFindingShortfall,
 )
 from app.services.superdocs_service import SuperDocsClientService
+from app.helpers.template_renderer import TemplateRenderer
 
 
 class AggregationService:
@@ -30,10 +31,23 @@ class AggregationService:
         total_invited = len(suppliers)
 
         tier_stats: dict[str, dict[str, int]] = {
-            t.value: {"total": 0, "low": 0, "med": 0, "high": 0, "crit": 0} for t in SupplierTier
+            t.value: {
+                "total": 0,
+                RiskTier.LOW.value: 0,
+                RiskTier.MEDIUM.value: 0,
+                RiskTier.HIGH.value: 0,
+                RiskTier.CRITICAL.value: 0,
+            }
+            for t in SupplierTier
         }
         reg_stats: dict[str, dict[str, int]] = {
-            r.value: {"total": 0, "low": 0, "med": 0, "high": 0} for r in Region
+            r.value: {
+                "total": 0,
+                RiskTier.LOW.value: 0,
+                RiskTier.MEDIUM.value: 0,
+                RiskTier.HIGH.value: 0,
+            }
+            for r in Region
         }
 
         # Initialize total counts from all registered suppliers
@@ -47,10 +61,19 @@ class AggregationService:
         att_stmt = select(AttestationCycleModel).where(AttestationCycleModel.cycle_year == cycle_year)
         att_res = await self.db.execute(att_stmt)
         attestations = list(att_res.scalars().all())
-        
+
+        evaluated_statuses = {
+            AttestationStatus.SUBMITTED.value,
+            AttestationStatus.NORMALIZED.value,
+            AttestationStatus.UNDER_REVIEW.value,
+            AttestationStatus.APPROVED.value,
+            AttestationStatus.FOLLOW_UP_REQUIRED.value,
+            AttestationStatus.CLOSED.value,
+        }
+
         submitted_count = sum(
             1 for a in attestations
-            if a.status in ["SUBMITTED", "NORMALIZED", "UNDER_REVIEW", "APPROVED", "FOLLOW_UP_REQUIRED", "CLOSED"]
+            if a.status in evaluated_statuses
         )
         attestation_rate = round((submitted_count / total_invited * 100.0) if total_invited > 0 else 0.0, 1)
 
@@ -64,7 +87,12 @@ class AggregationService:
         ass_res = await self.db.execute(ass_stmt)
         assessment_rows = list(ass_res.all())
 
-        risk_counts = {RiskTier.CRITICAL.value: 0, RiskTier.HIGH.value: 0, RiskTier.MEDIUM.value: 0, RiskTier.LOW.value: 0}
+        risk_counts = {
+            RiskTier.CRITICAL.value: 0,
+            RiskTier.HIGH.value: 0,
+            RiskTier.MEDIUM.value: 0,
+            RiskTier.LOW.value: 0,
+        }
         env_scores: list[float] = []
         soc_scores: list[float] = []
         gov_scores: list[float] = []
@@ -79,16 +107,14 @@ class AggregationService:
             soc_scores.append(ass.social_score)
             gov_scores.append(ass.governance_score)
 
-            if tier_val in tier_stats:
-                if r_tier == "LOW": tier_stats[tier_val]["low"] += 1
-                elif r_tier == "MEDIUM": tier_stats[tier_val]["med"] += 1
-                elif r_tier == "HIGH": tier_stats[tier_val]["high"] += 1
-                elif r_tier == "CRITICAL": tier_stats[tier_val]["crit"] += 1
+            if tier_val in tier_stats and r_tier in tier_stats[tier_val]:
+                tier_stats[tier_val][r_tier] += 1
 
             if reg_val in reg_stats:
-                if r_tier == "LOW": reg_stats[reg_val]["low"] += 1
-                elif r_tier == "MEDIUM": reg_stats[reg_val]["med"] += 1
-                else: reg_stats[reg_val]["high"] += 1
+                if r_tier in [RiskTier.LOW.value, RiskTier.MEDIUM.value]:
+                    reg_stats[reg_val][r_tier] += 1
+                else:
+                    reg_stats[reg_val][RiskTier.HIGH.value] += 1
 
         total_assessed = len(assessment_rows)
         risk_breakdown = [
@@ -113,10 +139,10 @@ class AggregationService:
             TierRiskData(
                 tier=SupplierTier(t),
                 total_suppliers=tier_stats[t]["total"],
-                low_risk=tier_stats[t]["low"],
-                medium_risk=tier_stats[t]["med"],
-                high_risk=tier_stats[t]["high"],
-                critical_risk=tier_stats[t]["crit"]
+                low_risk=tier_stats[t][RiskTier.LOW.value],
+                medium_risk=tier_stats[t][RiskTier.MEDIUM.value],
+                high_risk=tier_stats[t][RiskTier.HIGH.value],
+                critical_risk=tier_stats[t][RiskTier.CRITICAL.value],
             )
             for t in tier_stats
         ]
@@ -125,9 +151,9 @@ class AggregationService:
             RegionalRiskData(
                 region=Region(r),
                 total_suppliers=reg_stats[r]["total"],
-                low_risk=reg_stats[r]["low"],
-                medium_risk=reg_stats[r]["med"],
-                high_risk=reg_stats[r]["high"]
+                low_risk=reg_stats[r][RiskTier.LOW.value],
+                medium_risk=reg_stats[r][RiskTier.MEDIUM.value],
+                high_risk=reg_stats[r][RiskTier.HIGH.value],
             )
             for r in reg_stats
         ]
@@ -149,25 +175,21 @@ class AggregationService:
             ))
 
         prog_risk = (
-            "HIGH" if risk_counts.get("CRITICAL", 0) + risk_counts.get("HIGH", 0) > total_assessed * 0.4
-            else "MEDIUM" if risk_counts.get("MEDIUM", 0) > total_assessed * 0.3
-            else "CONTROLLED / LOW"
+            RiskTier.HIGH.value if risk_counts.get(RiskTier.CRITICAL.value, 0) + risk_counts.get(RiskTier.HIGH.value, 0) > total_assessed * 0.4
+            else RiskTier.MEDIUM.value if risk_counts.get(RiskTier.MEDIUM.value, 0) > total_assessed * 0.3
+            else RiskTier.LOW.value
         )
 
-        narrative = f"""# EXECUTIVE SUPPLIER ESG PROGRAMME AUDIT REPORT ({cycle_year})
-
-## 1. Executive Summary
-During the {cycle_year} Supplier Attestation Cycle, **{total_invited} suppliers** across 3 tiers and 3 global operating jurisdictions were invited to complete the mandatory ESG & Ethical Conduct Attestation.
-
-- **Programme Completion Rate:** **{attestation_rate}%** ({submitted_count}/{total_invited} suppliers)
-- **Programme Risk Rating:** **{prog_risk}**
-- **Average ESG Compliance:** Environmental **{pillar_averages.environmental_avg}%**, Social **{pillar_averages.social_avg}%**, Governance **{pillar_averages.governance_avg}%**.
-
-## 2. Key Systemic Risk Vectors
-1. **Scope 2 & 3 Emissions Gaps:** Strategic Tier 1 suppliers in emerging manufacturing hubs show delays in external third-party energy verifications.
-2. **Working Hours Peak-Season Overtime:** Manufacturing sites report seasonal peak compression requiring enhanced labor scheduling controls.
-3. **Formal Anti-Bribery Curricula:** Indirect commodity suppliers require standardized training packs to satisfy supply chain due diligence mandates.
-"""
+        narrative = TemplateRenderer.render(
+            "executive_report.md.j2",
+            cycle_year=cycle_year,
+            total_invited=total_invited,
+            submitted_count=submitted_count,
+            attestation_rate=attestation_rate,
+            prog_risk=prog_risk,
+            pillar_averages=pillar_averages,
+            top_shortfalls=top_shortfalls,
+        )
 
         return ProgrammeReportResponse(
             cycle_year=cycle_year,

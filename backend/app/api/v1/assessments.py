@@ -24,9 +24,9 @@ async def get_assessment(assessment_id: str, db: AsyncSession = Depends(get_db))
     return assessment
 
 
-@router.get("/by-attestation/{attestation_id}", response_model=AssessmentResponse)
+@router.get("/by-attestation/{attestation_id}", response_model=AssessmentResponse | None)
 async def get_assessment_by_attestation(attestation_id: str, db: AsyncSession = Depends(get_db)):
-    """Get assessment for a specific attestation cycle."""
+    """Get assessment for a specific attestation cycle (returns null if not yet submitted/evaluated)."""
     stmt = (
         select(AssessmentModel)
         .options(selectinload(AssessmentModel.findings))
@@ -34,6 +34,4 @@ async def get_assessment_by_attestation(attestation_id: str, db: AsyncSession = 
     )
     res = await db.execute(stmt)
     assessment = res.scalar_one_or_none()
-    if not assessment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment for attestation not found")
     return assessment
