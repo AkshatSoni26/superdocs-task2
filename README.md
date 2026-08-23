@@ -1,14 +1,12 @@
 # SupplyGuard — Supplier ESG Attestation & Responsible-Sourcing Compliance Engine
 
-> *Built for the SuperDocs Full-Stack AI Engineer Task (Assigned Build S2: Responsible-Sourcing & Supplier Attestation)*
-
-An automated, audit-ready compliance intelligence platform built on the **SuperDocs API & MCP surface**. The system manages the complete annual supplier ESG attestation lifecycle: issuing localized tier-specific questionnaires and codes of conduct, normalizing multi-format responses into a standardized schema, enforcing human-in-the-loop review gates, automatically drafting evidence-quoted deficiency notices, and reconciling aggregate risk profile charts.
+An automated, audit-ready compliance intelligence platform that manages the complete annual supplier ESG attestation lifecycle: issuing localized tier-specific questionnaires and codes of conduct, normalizing multi-format responses into a standardized schema, enforcing human-in-the-loop review gates, automatically drafting evidence-quoted deficiency notices, and reconciling aggregate risk profile charts.
 
 ---
 
 ## 🎬 Live Product Walkthrough Demo
 
-▶️ **Watch the 3-Minute Video Demo on Loom:** [SuperDocs Supplier ESG Attestation Engine Demo](https://www.loom.com/share/4ee46470abbf47a1a28bf1d77eeb285a)
+▶️ **Watch the 3-Minute Video Demo on Loom:** [SupplyGuard Product Walkthrough Demo](https://www.loom.com/share/4ee46470abbf47a1a28bf1d77eeb285a)
 
 ---
 
@@ -30,7 +28,7 @@ An automated, audit-ready compliance intelligence platform built on the **SuperD
 * **Backend Framework:** **FastAPI** (Python 3.12, strict Pydantic v2 schemas, zero `Any`/`dict` loose typing).
 * **Evaluator Architecture:** **Decomposed Single-Responsibility Sub-Services** (`EnvironmentalEvaluator`, `SocialEvaluator`, `GovernanceEvaluator`, `ESGScoringCalculator`).
 * **Document Templating & PDF Generation:** **Jinja2** (dynamic questionnaire & deficiency notice markdown compilation) + **ReportLab** (audit-grade vector PDF exports).
-* **SuperDocs Integration:** **SuperDocs API & MCP Surface** (4-Step Contract: Upload $\rightarrow$ Chat/Edit $\rightarrow$ Approve $\rightarrow$ Export with 2-Step JSON string parsing).
+* **Document Engine Integration:** **Agentic Document API** (4-Step Contract: Upload $\rightarrow$ Chat/Edit $\rightarrow$ Approve $\rightarrow$ Export with 2-Step JSON string parsing).
 * **Database Layer:** **Async SQLAlchemy + SQLite / PostgreSQL** (Suppliers, Attestations, Findings, Letters).
 * **Frontend UI:** **Next.js 16 (Turbopack) + React 19** (Tailwind CSS, high-contrast dark theme, Recharts visualizations, custom React hooks).
 
@@ -69,22 +67,22 @@ flowchart TD
             FollowUp["✉️ FollowUpService (Deficiency Letters with Verbatim Quotes)"]
             Aggregation["📈 AggregationService (Cross-Tier Reconciliation)"]
             DocExport["📑 DocumentExportService (ReportLab Multi-Page Vector PDF)"]
-            SD_Client["🤖 SuperDocsClientService (4-Step Contract & 2-Step JSON Parse)"]
+            DocClient["🤖 DocumentClientService (4-Step Contract & 2-Step JSON Parse)"]
         end
         
         DB[("Database (SQLite / PostgreSQL)\n(Suppliers, Attestations, Findings, Letters)")]
     end
 
-    subgraph External ["SuperDocs Surface"]
-        SD_Platform["SuperDocs API / MCP Surface\n(Upload -> Chat/Edit -> Approve -> Export)"]
+    subgraph External ["Document Intelligence Surface"]
+        DocPlatform["Document API Surface\n(Upload -> Chat/Edit -> Approve -> Export)"]
     end
 
     Frontend <--> Router
     Router --> CoreServices
     CoreServices --> Evaluators
     CoreServices <--> DB
-    DocExport --> SD_Client
-    SD_Client <--> SD_Platform
+    DocExport --> DocClient
+    DocClient <--> DocPlatform
 ```
 
 </details>
@@ -205,9 +203,9 @@ erDiagram
    - Executive dashboard charts (Risk Profile Donut, Stacked Tier Bar Chart, Pillar Compliance Averages) mathematically reconcile with individual supplier assessment records.
 4. **Honest Zero-Finding Reports**:
    - Compliant suppliers (e.g., `Nordic CleanTech Solutions AB`) receive an honest report of **0 findings**, proving the system never hallucinates defects.
-5. **SuperDocs 4-Step Contract & Two-Step JSON String Parsing**:
+5. **4-Step Document Contract & Two-Step JSON String Parsing**:
    - Strictly implements `Upload` $\rightarrow$ `Chat/Edit` $\rightarrow$ `Approve` $\rightarrow$ `Export`.
-   - Correctly unpacks double JSON string-encoded proposed change payloads from SuperDocs to avoid undefined diff cards.
+   - Correctly unpacks double JSON string-encoded proposed change payloads to avoid undefined diff cards.
 
 ---
 
@@ -232,7 +230,7 @@ make frontend
 
 ## 🧪 Automated Testing Suites (27 Backend + 14 Frontend Tests)
 
-All tests execute in milliseconds with in-memory SQLite and mock SuperDocs fallback:
+All tests execute in milliseconds with in-memory SQLite and mock fallback:
 
 ```bash
 # Run all tests (Backend + Frontend)
